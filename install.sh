@@ -67,9 +67,14 @@ echo -e "${GREEN}  ✓ Root access confirmed${NC}"
 
 echo ""
 echo -e "${CYAN}[2/10] Updating system packages...${NC}"
-apt update > /dev/null 2>&1
-apt upgrade -y > /dev/null 2>&1
-apt-get install -y -qq curl git build-essential > /dev/null 2>&1
+echo -e "${YELLOW}  ⟳ apt update${NC}"
+apt update
+echo ""
+echo -e "${YELLOW}  ⟳ apt upgrade${NC}"
+apt upgrade -y
+echo ""
+echo -e "${YELLOW}  ⟳ Installing curl, git, build-essential${NC}"
+apt-get install -y curl git build-essential > /dev/null 2>&1
 echo -e "${GREEN}  ✓ Base packages installed${NC}"
 
 echo ""
