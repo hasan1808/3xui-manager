@@ -19,9 +19,7 @@
 ## نصب خودکار (Ubuntu)
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/hasan1808/3xui-manager/main/install.sh -o install.sh
-chmod +x install.sh
-sudo ./install.sh
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/hasan1808/3xui-manager/main/install.sh)"
 ```
 
 ## نصب دستی
