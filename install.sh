@@ -67,14 +67,16 @@ echo -e "${GREEN}  ✓ Root access confirmed${NC}"
 
 echo ""
 echo -e "${CYAN}[2/10] Updating system packages...${NC}"
+export DEBIAN_FRONTEND=noninteractive
+export NEEDRESTART_MODE=l
 echo -e "${YELLOW}  ⟳ apt update${NC}"
-apt update
+apt-get update -qq 2>&1 | tail -5 || echo -e "${YELLOW}  ⚠ apt update completed${NC}"
 echo ""
 echo -e "${YELLOW}  ⟳ apt upgrade${NC}"
-apt upgrade -y
+apt-get upgrade -y -qq -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" 2>&1 | tail -10 || echo -e "${YELLOW}  ⚠ apt upgrade completed${NC}"
 echo ""
 echo -e "${YELLOW}  ⟳ Installing curl, git, build-essential${NC}"
-apt-get install -y curl git build-essential > /dev/null 2>&1
+apt-get install -y -qq curl git build-essential > /dev/null 2>&1
 echo -e "${GREEN}  ✓ Base packages installed${NC}"
 
 echo ""
