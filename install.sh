@@ -124,7 +124,11 @@ echo -e "${GREEN}  ✓ Project downloaded${NC}"
 
 echo ""
 echo -e "${CYAN}[6/10] Installing dependencies...${NC}"
-npm install > /dev/null 2>&1
+npm install 2>&1 | tail -10
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo -e "${RED}  ✗ npm install failed!${NC}"
+  exit 1
+fi
 echo -e "${GREEN}  ✓ Dependencies installed${NC}"
 
 echo ""
@@ -151,7 +155,11 @@ echo -e "${GREEN}  ✓ Configuration saved${NC}"
 
 echo ""
 echo -e "${CYAN}[8/10] Building project...${NC}"
-npm run build > /dev/null 2>&1
+npm run build 2>&1 | tail -15
+if [ ${PIPESTATUS[0]} -ne 0 ]; then
+  echo -e "${RED}  ✗ Build failed! Check the error above.${NC}"
+  exit 1
+fi
 echo -e "${GREEN}  ✓ Project built successfully${NC}"
 
 echo ""
