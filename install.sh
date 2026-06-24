@@ -276,8 +276,9 @@ if systemctl is-active --quiet ${SERVICE_NAME}; then
     if [[ -n "$DOMAIN_NAME" ]]; then
         echo -e "  Access URL:  ${CYAN}https://${DOMAIN_NAME}${NC}"
     else
-        echo -e "  Access URL:  ${CYAN}http://$(hostname -I | awk '{print $1}')${NC}"
+        echo -e "  Access URL:  ${CYAN}http://$(hostname -I | awk '{print $1}'):${PORT}${NC}"
     fi
+    echo -e "  Port:        ${YELLOW}${PORT}${NC}"
     echo -e "  Username:    ${YELLOW}${ADMIN_USER}${NC}"
     echo -e "  Password:    ${YELLOW}${ADMIN_PASS}${NC}"
     echo ""
