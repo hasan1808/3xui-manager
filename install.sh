@@ -250,6 +250,7 @@ Environment=NODE_ENV=production
 Environment=PORT=${PORT}
 Environment=ADMIN_USER=${ADMIN_USER}
 Environment=ADMIN_PASS=${ADMIN_PASS}
+${SSL_ENV:+Environment=SSL_ENABLED=true}
 
 [Install]
 WantedBy=multi-user.target
