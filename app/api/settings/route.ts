@@ -3,8 +3,6 @@ import { requireAuth } from "@/lib/auth-api";
 import { readSettings, writeSettings, type AppSettings } from "@/lib/settings-store";
 
 export async function GET(req: Request) {
-  const auth = await requireAuth(req);
-  if (auth) return auth;
   const settings = readSettings();
   return NextResponse.json(settings);
 }
