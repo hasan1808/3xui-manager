@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const publicPaths = ["/login", "/api/auth/login"];
+const publicPaths = ["/login", "/api/auth/login", "/api/settings"];
 
 export async function middleware(req: NextRequest) {
   if (process.env.NODE_ENV === "production" && process.env.SSL_ENABLED === "true") {
