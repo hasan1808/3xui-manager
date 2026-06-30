@@ -171,6 +171,10 @@ export default function SettingsPage() {
       if (res.ok) {
         toast(data.message);
         setServerDomain(data.domain);
+        const proto = data.ssl ? "https" : "http";
+        setTimeout(() => {
+          window.location.href = `${proto}://${data.domain}/admin/settings`;
+        }, 2000);
       } else {
         toast(data.error || "خطا", "error");
       }
