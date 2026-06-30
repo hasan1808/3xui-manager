@@ -17,6 +17,7 @@ interface Panel {
   username?: string;
   apiToken?: string;
   subUri?: string;
+  clientUrl?: string;
   active: boolean;
   createdAt: string;
   ownerId?: string;
