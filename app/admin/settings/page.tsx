@@ -58,6 +58,11 @@ export default function SettingsPage() {
   const [newPort, setNewPort] = useState("");
   const [restarting, setRestarting] = useState(false);
 
+  const [serverDomain, setServerDomain] = useState("");
+  const [domainInput, setDomainInput] = useState("");
+  const [domainSsl, setDomainSsl] = useState(false);
+  const [domainSaving, setDomainSaving] = useState(false);
+
   const isSuperadmin = currentUser?.role === "superadmin";
 
   function loadBackupData() {
@@ -82,6 +87,7 @@ export default function SettingsPage() {
     fetch("/api/settings").then((r) => r.json()).then(setSettings).catch(() => router.push("/login"));
     loadBackupData();
     fetch("/api/settings/port", { credentials: "include" }).then((r) => r.json()).then((d) => setServerPort(d.port)).catch(() => {});
+    fetch("/api/settings/domain", { credentials: "include" }).then((r) => r.json()).then((d) => { setServerDomain(d.domain); setDomainSsl(d.ssl); setDomainInput(d.domain); }).catch(() => {});
   }, [router]);
 
   const actionLabels: Record<string, string> = {
@@ -150,6 +156,26 @@ export default function SettingsPage() {
       }
     } catch { toast("خطا در ریستارت", "error"); }
     setRestarting(false);
+  }
+
+  async function saveDomain() {
+    if (!domainInput.trim()) { toast("دامنه را وارد کنید", "error"); return; }
+    setDomainSaving(true);
+    try {
+      const res = await fetch("/api/settings/domain", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: domainInput.trim(), enableSsl: domainSsl }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast(data.message);
+        setServerDomain(data.domain);
+      } else {
+        toast(data.error || "خطا", "error");
+      }
+    } catch { toast("خطا", "error"); }
+    setDomainSaving(false);
   }
 
   async function clearLogs() {
@@ -327,6 +353,35 @@ export default function SettingsPage() {
                   {restarting && <Spinner />}
                   {restarting ? "در حال ریستارت..." : "ریستارت"}
                 </button>
+              </div>
+              <hr style={{ borderColor: "var(--border-color)" }} />
+              <div className="space-y-3">
+                <div>
+                  <label className="text-sm font-medium">دامنه پنل</label>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>
+                    {serverDomain ? `دامنه فعلی: ${serverDomain}` : "دامنه‌ای تنظیم نشده"}
+                    {serverDomain && domainSsl && <span className="text-green-400 mr-2">SSL فعال</span>}
+                  </p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="text" value={domainInput} placeholder="panel.example.com"
+                    onChange={(e) => setDomainInput(e.target.value)}
+                    onKeyDown={(e) => e.key === "Enter" && saveDomain()}
+                    className="flex-1 p-2 rounded border outline-none text-sm" dir="ltr"
+                    style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", borderColor: "var(--border-color)" }} />
+                  <label className="flex items-center gap-1.5 text-sm whitespace-nowrap cursor-pointer">
+                    <input type="checkbox" checked={domainSsl} onChange={(e) => setDomainSsl(e.target.checked)}
+                      className="w-4 h-4 rounded" />
+                    SSL
+                  </label>
+                  <button onClick={saveDomain} disabled={domainSaving || !domainInput.trim()}
+                    className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm transition">
+                    {domainSaving ? "در حال تنظیم..." : "تنظیم دامنه"}
+                  </button>
+                </div>
+                <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
+                  Nginx و Let's Encrypt (اختیاری) نصب و پیکربندی می‌شود
+                </p>
               </div>
             </div>
           )}
