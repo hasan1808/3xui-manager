@@ -48,7 +48,7 @@
 ## نصب خودکار (Ubuntu)
 
 ```bash
-bash -c "$(curl -fsSL https://raw.githubusercontent.com/mahdibprogram/3xui-manager/main/install.sh)"
+bash -c "$(curl -fsSL https://raw.githubusercontent.com/hasan1808/3xui-manager/main/install.sh)"
 ```
 
 > **توجه:** دانلود و نصب کدها بسته به سرعت اینترنت ممکن است چند دقیقه زمان ببرد. لطفاً صبور باشید.
@@ -64,7 +64,7 @@ bash -c "$(curl -fsSL https://raw.githubusercontent.com/mahdibprogram/3xui-manag
 
 ```bash
 # کلون کردن پروژه
-git clone https://github.com/mahdibprogram/3xui-manager.git
+git clone https://github.com/hasan1808/3xui-manager.git
 cd 3xui-manager
 
 # نصب وابستگی‌ها

@@ -343,7 +343,7 @@ export default function DashboardPage() {
         </div>
 
         <div className="mt-8 text-center text-xs" style={{ color: "var(--text-secondary)" }}>
-          <a href="https://github.com/mahdibprogram/3xui-manager" target="_blank" rel="noopener noreferrer"
+          <a href="https://github.com/hasan1808/3xui-manager" target="_blank" rel="noopener noreferrer"
             className="hover:text-blue-400 transition">GitHub</a>
           <span className="mx-2">|</span>
           <span>3xui-manager v1.1</span>

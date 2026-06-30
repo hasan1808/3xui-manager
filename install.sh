@@ -117,7 +117,7 @@ if [[ -d "$INSTALL_DIR" ]]; then
     cd "$INSTALL_DIR"
     git pull > /dev/null 2>&1 || true
 else
-    git clone https://github.com/mahdibprogram/3xui-manager.git "$INSTALL_DIR" > /dev/null 2>&1
+    git clone https://github.com/hasan1808/3xui-manager.git "$INSTALL_DIR" > /dev/null 2>&1
     cd "$INSTALL_DIR"
 fi
 echo -e "${GREEN}  ✓ Project downloaded${NC}"
