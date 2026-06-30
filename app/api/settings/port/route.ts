@@ -51,7 +51,21 @@ export async function PUT(req: Request) {
 
   try {
     setTimeout(() => {
-      try { execSync("systemctl restart 3xui-manager", { timeout: 10000 }); } catch {}
+      try {
+        const serviceFile = "/etc/systemd/system/3xui-manager.service";
+        const { readFileSync, writeFileSync, existsSync } = require("fs");
+        if (existsSync(serviceFile)) {
+          let svc = readFileSync(serviceFile, "utf-8");
+          if (svc.match(/Environment=PORT=\d+/)) {
+            svc = svc.replace(/Environment=PORT=\d+/, `Environment=PORT=${portNum}`);
+          } else {
+            svc = svc.replace(/\[Service\]/, `[Service]\nEnvironment=PORT=${portNum}`);
+          }
+          writeFileSync(serviceFile, svc, "utf-8");
+          execSync("systemctl daemon-reload", { timeout: 10000 });
+        }
+        execSync("systemctl restart 3xui-manager", { timeout: 10000 });
+      } catch {}
     }, 1000);
   } catch {}
 
