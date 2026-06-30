@@ -81,8 +81,36 @@ export async function PUT(req: Request) {
         execSync("apt-get install -y -qq certbot python3-certbot-nginx", { timeout: 120000 });
       }
 
-      // HTTP redirect
+      // First setup HTTP only nginx config
       const conf = `server {
+    listen 80;
+    server_name ${domainClean};
+
+    location / {
+        proxy_pass http://127.0.0.1:${port};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \\$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \\$host;
+        proxy_set_header X-Real-IP \\$remote_addr;
+        proxy_set_header X-Forwarded-For \\$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \\$scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+}`;
+      fs.writeFileSync(NGINX_CONF, conf, "utf-8");
+      execSync(`ln -sf ${NGINX_CONF} ${NGINX_LINK}`, { timeout: 5000 });
+      execSync("rm -f /etc/nginx/sites-enabled/default", { timeout: 5000 });
+      execSync("nginx -t", { timeout: 5000 });
+      execSync("systemctl reload nginx", { timeout: 10000 });
+
+      // Now get SSL certificate via certbot
+      try {
+        execSync(`certbot certonly --nginx -d ${domainClean} --non-interactive --agree-tos --email admin@${domainClean}`, { timeout: 120000 });
+
+        // After cert obtained, update nginx with SSL
+        const sslConf = `server {
     listen 80;
     server_name ${domainClean};
     return 301 https://\\$host\\$request_uri;
@@ -108,33 +136,25 @@ server {
         proxy_send_timeout 86400;
     }
 }`;
-      fs.writeFileSync(NGINX_CONF, conf, "utf-8");
+        fs.writeFileSync(NGINX_CONF, sslConf, "utf-8");
+        execSync("nginx -t", { timeout: 5000 });
+        execSync("systemctl reload nginx", { timeout: 10000 });
 
-      // Enable site
-      execSync(`ln -sf ${NGINX_CONF} ${NGINX_LINK}`, { timeout: 5000 });
-      execSync("rm -f /etc/nginx/sites-enabled/default", { timeout: 5000 });
-      execSync("nginx -t", { timeout: 5000 });
-      execSync("systemctl reload nginx", { timeout: 10000 });
+        // Enable SSL in env
+        const envPath = path.join(process.cwd(), ".env.local");
+        let envContent = "";
+        if (fs.existsSync(envPath)) envContent = fs.readFileSync(envPath, "utf-8");
+        if (envContent.match(/SSL_ENABLED=/)) {
+          envContent = envContent.replace(/SSL_ENABLED=\w+/, "SSL_ENABLED=true");
+        } else {
+          envContent += "\nSSL_ENABLED=true";
+        }
+        fs.writeFileSync(envPath, envContent, "utf-8");
 
-      // Get SSL certificate
-      try {
-        execSync(`certbot --nginx -d ${domainClean} --non-interactive --agree-tos --redirect`, { timeout: 120000 });
+        return NextResponse.json({ ok: true, domain: domainClean, ssl: true, message: `دامنه ${domainClean} با SSL تنظیم شد` });
       } catch {
-        return NextResponse.json({ ok: true, domain: domainClean, ssl: false, message: `دامنه ${domainClean} تنظیم شد. SSL ناموفق بود - بعداً دوباره تلاش کنید.` });
+        return NextResponse.json({ ok: true, domain: domainClean, ssl: false, message: `دامنه ${domainClean} تنظیم شد. SSL ناموفق بود - certbot اجرا نشد.` });
       }
-
-      // Enable SSL in env
-      const envPath = path.join(process.cwd(), ".env.local");
-      let envContent = "";
-      if (fs.existsSync(envPath)) envContent = fs.readFileSync(envPath, "utf-8");
-      if (envContent.match(/SSL_ENABLED=/)) {
-        envContent = envContent.replace(/SSL_ENABLED=\w+/, "SSL_ENABLED=true");
-      } else {
-        envContent += "\nSSL_ENABLED=true";
-      }
-      fs.writeFileSync(envPath, envContent, "utf-8");
-
-      return NextResponse.json({ ok: true, domain: domainClean, ssl: true, message: `دامنه ${domainClean} با SSL تنظیم شد` });
     } else {
       // No SSL - HTTP only
       const conf = `server {
