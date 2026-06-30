@@ -1,5 +1,6 @@
 import { NextResponse } from "next/server";
 import { requireAuth, getAuthUser } from "@/lib/auth-api";
+import { execSync } from "child_process";
 
 export async function POST(req: Request) {
   const auth = await requireAuth(req);
@@ -9,12 +10,9 @@ export async function POST(req: Request) {
     return NextResponse.json({ error: "فقط مدیر اصلی" }, { status: 403 });
   }
 
-  try {
-    const { execSync } = await import("child_process");
-    execSync("systemctl restart 3xui-manager", { timeout: 10000 });
-  } catch (e: any) {
-    return NextResponse.json({ error: "خطا در ریستارت: " + e.message }, { status: 500 });
-  }
+  setTimeout(() => {
+    try { execSync("systemctl restart 3xui-manager", { timeout: 10000 }); } catch {}
+  }, 1000);
 
-  return NextResponse.json({ ok: true, message: "سرویس ریستارت شد" });
+  return NextResponse.json({ ok: true, message: "سرویس در حال ریستارت..." });
 }

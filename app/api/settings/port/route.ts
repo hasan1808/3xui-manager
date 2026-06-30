@@ -50,8 +50,10 @@ export async function PUT(req: Request) {
   }
 
   try {
-    execSync("systemctl restart 3xui-manager", { timeout: 10000 });
+    setTimeout(() => {
+      try { execSync("systemctl restart 3xui-manager", { timeout: 10000 }); } catch {}
+    }, 1000);
   } catch {}
 
-  return NextResponse.json({ ok: true, port: portNum, message: `پورت به ${portNum} تغییر کرد. سرویس ریستارت شد.` });
+  return NextResponse.json({ ok: true, port: portNum, message: `پورت به ${portNum} تغییر کرد. سرویس در حال ریستارت...` });
 }
