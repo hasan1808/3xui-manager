@@ -42,7 +42,7 @@ export async function GET(req: Request) {
 
       if (hasAllowed) {
         panelCount++;
-        if (status && !status.error) panelsOnline++;
+        if (status) panelsOnline++;
         try {
           const lastOnlineMap = await client.getLastOnline();
           const now = Date.now();
