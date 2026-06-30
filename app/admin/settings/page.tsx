@@ -81,7 +81,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then(setSettings).catch(() => router.push("/login"));
     loadBackupData();
-    fetch("/api/settings/port").then((r) => r.json()).then((d) => setServerPort(d.port)).catch(() => {});
+    fetch("/api/settings/port", { credentials: "include" }).then((r) => r.json()).then((d) => setServerPort(d.port)).catch(() => {});
   }, [router]);
 
   const actionLabels: Record<string, string> = {
