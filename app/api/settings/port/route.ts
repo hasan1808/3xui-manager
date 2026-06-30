@@ -7,15 +7,31 @@ import path from "path";
 export async function GET() {
   const auth = await requireAuth(new Request("http://localhost"));
   if (auth) return auth;
-  const envPath = path.join(process.cwd(), ".env.local");
+
   let port = "3000";
+
+  // Try systemd service file first (most accurate)
   try {
-    if (fs.existsSync(envPath)) {
-      const content = fs.readFileSync(envPath, "utf-8");
-      const match = content.match(/^PORT=(.+)$/m);
-      if (match) port = match[1].trim();
+    const serviceFile = "/etc/systemd/system/3xui-manager.service";
+    if (fs.existsSync(serviceFile)) {
+      const svc = fs.readFileSync(serviceFile, "utf-8");
+      const match = svc.match(/Environment=PORT=(\d+)/);
+      if (match) port = match[1];
     }
   } catch {}
+
+  // Fallback to .env.local
+  if (port === "3000") {
+    try {
+      const envPath = path.join(process.cwd(), ".env.local");
+      if (fs.existsSync(envPath)) {
+        const content = fs.readFileSync(envPath, "utf-8");
+        const match = content.match(/^PORT=(.+)$/m);
+        if (match) port = match[1].trim();
+      }
+    } catch {}
+  }
+
   return NextResponse.json({ port });
 }
 

@@ -125,9 +125,11 @@ export default function SettingsPage() {
       const data = await res.json();
       if (res.ok) {
         toast(data.message);
-        setServerPort(newPort);
+        const targetPort = newPort;
         setNewPort("");
-        setTimeout(() => window.location.reload(), 2000);
+        setTimeout(() => {
+          window.location.href = `${window.location.protocol}//${window.location.hostname}:${targetPort}/admin/settings`;
+        }, 2000);
       } else {
         toast(data.error || "خطا", "error");
       }
