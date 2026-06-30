@@ -54,6 +54,10 @@ export default function SettingsPage() {
   const [logTotalPages, setLogTotalPages] = useState(0);
   const logPageSize = 50;
 
+  const [serverPort, setServerPort] = useState("");
+  const [newPort, setNewPort] = useState("");
+  const [restarting, setRestarting] = useState(false);
+
   const isSuperadmin = currentUser?.role === "superadmin";
 
   function loadBackupData() {
@@ -77,6 +81,7 @@ export default function SettingsPage() {
   useEffect(() => {
     fetch("/api/settings").then((r) => r.json()).then(setSettings).catch(() => router.push("/login"));
     loadBackupData();
+    fetch("/api/settings/port").then((r) => r.json()).then((d) => setServerPort(d.port)).catch(() => {});
   }, [router]);
 
   const actionLabels: Record<string, string> = {
@@ -106,6 +111,43 @@ export default function SettingsPage() {
       }
     } catch {}
     setLogLoading(false);
+  }
+
+  async function changePort() {
+    if (!newPort) return;
+    setSaving(true);
+    try {
+      const res = await fetch("/api/settings/port", {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ port: newPort }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast(data.message);
+        setServerPort(newPort);
+        setNewPort("");
+        setTimeout(() => window.location.reload(), 2000);
+      } else {
+        toast(data.error || "خطا", "error");
+      }
+    } catch { toast("خطا", "error"); }
+    setSaving(false);
+  }
+
+  async function restartServer() {
+    setRestarting(true);
+    try {
+      const res = await fetch("/api/settings/restart", { method: "POST" });
+      const data = await res.json();
+      if (res.ok) {
+        toast("سرویس ریستارت شد. چند لحظه صبر کنید...");
+        setTimeout(() => window.location.reload(), 5000);
+      } else {
+        toast(data.error || "خطا", "error");
+      }
+    } catch { toast("خطا در ریستارت", "error"); }
+    setRestarting(false);
   }
 
   async function clearLogs() {
@@ -250,6 +292,39 @@ export default function SettingsPage() {
                   onBlur={(e) => save("panelRetryAttempts", parseInt(e.target.value))}
                   className="p-2 rounded border outline-none text-sm w-20 text-left" dir="ltr"
                   style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", borderColor: "var(--border-color)" }} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === "settings" && (
+            <div className="rounded-lg p-5 shadow space-y-4 mt-4" style={{ background: "var(--bg-secondary)" }}>
+              <h2 className="text-lg font-semibold">مدیریت سرور</h2>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium">پورت سرور</label>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>پورت فعلی: {serverPort || "..."}</p>
+                </div>
+                <div className="flex items-center gap-2">
+                  <input type="number" value={newPort} min="1" max="65535" placeholder={serverPort || "3000"}
+                    onChange={(e) => setNewPort(e.target.value)}
+                    className="p-2 rounded border outline-none text-sm w-20 text-left" dir="ltr"
+                    style={{ background: "var(--bg-tertiary)", color: "var(--text-primary)", borderColor: "var(--border-color)" }} />
+                  <button onClick={changePort} disabled={saving || !newPort}
+                    className="px-3 py-2 bg-yellow-600 hover:bg-yellow-700 disabled:opacity-50 rounded text-sm transition">
+                    {saving ? "..." : "تغییر پورت"}
+                  </button>
+                </div>
+              </div>
+              <div className="flex items-center justify-between">
+                <div>
+                  <label className="text-sm font-medium">ریستارت سرور</label>
+                  <p className="text-xs mt-0.5" style={{ color: "var(--text-secondary)" }}>سرویس 3xui-manager را مجدداً راه‌اندازی کنید</p>
+                </div>
+                <button onClick={restartServer} disabled={restarting}
+                  className="px-4 py-2 bg-red-600 hover:bg-red-700 disabled:opacity-50 rounded text-sm transition flex items-center gap-2">
+                  {restarting && <Spinner />}
+                  {restarting ? "در حال ریستارت..." : "ریستارت"}
+                </button>
               </div>
             </div>
           )}
