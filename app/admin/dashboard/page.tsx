@@ -44,6 +44,13 @@ interface FinanceSummary {
   currency: string;
   adminCount: number;
   isSuperadmin: boolean;
+  totalCustomersBalance: number;
+  totalCustomersDeposits: number;
+  totalUsage: number;
+  totalUsageGb: number;
+  totalCurrentGb: number;
+  myUsageGb: number;
+  myCurrentGb: number;
 }
 
 export default function DashboardPage() {
