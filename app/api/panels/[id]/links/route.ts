@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import { getPanel } from "@/lib/panel-store";
 import { getXuiClient } from "@/lib/xui-api";
 import { setClientLink, setSubUrl, getPanelLinks, getSubUrl } from "@/lib/client-links-store";
-import { requireAuth } from "@/lib/auth-api";
+import { requireAuth, getAuthUser } from "@/lib/auth-api";
 
 function parseClients(inb: any): any[] {
   try {
@@ -42,9 +42,13 @@ export async function POST(
 ) {
   const auth = await requireAuth(req);
   if (auth) return auth;
+  const user = await getAuthUser(req);
   const { id } = await params;
   const panel = getPanel(id);
   if (!panel) return NextResponse.json({ error: "Panel not found" }, { status: 404 });
+  if (user && user.role !== "superadmin" && panel.ownerId !== user.userId) {
+    return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+  }
 
   const errors: string[] = [];
   let count = 0;
@@ -85,11 +89,14 @@ export async function POST(
           try {
             const settings = await client.getSettingAll();
             if (settings.SubEnable !== false) {
-              const h = new URL(panel.url).hostname;
+              const baseUrl = panel.clientUrl || panel.url;
+              const h = new URL(baseUrl).hostname;
               const subUri = settings.SubUri || "";
               const subUrl = subUri
                 ? `${subUri.replace(/\/+$/, "")}/${subId}`
-                : `${panel.url.startsWith("https") ? "https" : "http"}://${h}:${settings.SubPort || 2096}${settings.SubPath || "/sub/"}${subId}`;
+                : panel.clientUrl
+                  ? `${panel.clientUrl.replace(/\/+$/, "")}/${subId}`
+                  : `${baseUrl.startsWith("https") ? "https" : "http"}://${h}:${settings.SubPort || 2096}${settings.SubPath || "/sub/"}${subId}`;
               await setSubUrl(id, subId, subUrl);
             }
           } catch (e: any) {

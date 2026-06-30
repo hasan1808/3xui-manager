@@ -11,10 +11,24 @@ function ensureDataFile(): void {
   if (!fs.existsSync(DATA_FILE)) fs.writeFileSync(DATA_FILE, "[]", "utf-8");
 }
 
+function migratePanels(panels: Panel[]): Panel[] {
+  let changed = false;
+  const migrated = panels.map((p) => {
+    if (!p.ownerId) {
+      changed = true;
+      return { ...p, ownerId: "legacy" };
+    }
+    return p;
+  });
+  if (changed) writePanels(migrated);
+  return migrated;
+}
+
 function readPanels(): Panel[] {
   ensureDataFile();
   try {
-    return JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    const panels = JSON.parse(fs.readFileSync(DATA_FILE, "utf-8"));
+    return migratePanels(panels);
   } catch {
     return [];
   }

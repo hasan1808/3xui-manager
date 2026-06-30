@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-api";
+import { requireAuth, getAuthUser } from "@/lib/auth-api";
 import { withLock, writeFileAtomic } from "@/lib/lock";
 import fs from "fs";
 import path from "path";
@@ -9,6 +9,10 @@ const DATA_FILE = path.join(process.cwd(), "data", "panels.json");
 export async function POST(req: Request) {
   const auth = await requireAuth(req);
   if (auth) return auth;
+  const user = await getAuthUser(req);
+  if (!user || user.role !== "superadmin") {
+    return NextResponse.json({ error: "فقط مدیر اصلی می‌تواند وارد کند" }, { status: 403 });
+  }
   try {
     const body = await req.json();
     if (!Array.isArray(body)) {

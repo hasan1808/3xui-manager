@@ -1,7 +1,7 @@
 import { NextResponse } from "next/server";
 import { SignJWT } from "jose";
 import { getJwtSecretBytes } from "@/lib/secret";
-import { getAdminPassword, getAdminUsername } from "@/lib/admin-store";
+import { verifyAdmin } from "@/lib/admin-store";
 
 const rateLimit = new Map<string, { count: number; resetAt: number }>();
 const RATE_MAX = 5;
@@ -38,16 +38,15 @@ export async function POST(req: Request) {
   }
 
   const { username, password } = await req.json();
-  const adminUser = getAdminUsername();
-  const adminPass = getAdminPassword();
+  const admin = verifyAdmin(username, password);
 
-  if (username !== adminUser || password !== adminPass) {
+  if (!admin) {
     return NextResponse.json({ error: "نام کاربری یا رمز اشتباه است" }, { status: 401 });
   }
 
-  const token = await new SignJWT({ username, role: "admin" })
+  const token = await new SignJWT({ userId: admin.id, username: admin.username, role: admin.role })
     .setProtectedHeader({ alg: "HS256" })
-    .setExpirationTime("24h")
+    .setExpirationTime("10m")
     .sign(getJwtSecretBytes());
 
   const res = NextResponse.json({ token });
@@ -55,7 +54,7 @@ export async function POST(req: Request) {
     httpOnly: true,
     secure: process.env.NODE_ENV === "production" && process.env.SSL_ENABLED === "true",
     sameSite: "lax",
-    maxAge: 86400,
+    maxAge: 600,
   });
   return res;
 }

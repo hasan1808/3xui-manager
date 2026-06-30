@@ -117,7 +117,7 @@ if [[ -d "$INSTALL_DIR" ]]; then
     cd "$INSTALL_DIR"
     git pull > /dev/null 2>&1 || true
 else
-    git clone https://github.com/hasan1808/3xui-manager.git "$INSTALL_DIR" > /dev/null 2>&1
+    git clone https://github.com/mahdibprogram/3xui-manager.git "$INSTALL_DIR" > /dev/null 2>&1
     cd "$INSTALL_DIR"
 fi
 echo -e "${GREEN}  ✓ Project downloaded${NC}"
@@ -143,7 +143,6 @@ fi
 
 cat > .env.local << EOF
 JWT_SECRET=${JWT_SECRET}
-ADMIN_USER=${ADMIN_USER}
 PORT=${PORT}
 ${SSL_ENV}
 EOF
@@ -155,7 +154,7 @@ echo -e "${GREEN}  ✓ Configuration saved${NC}"
 
 echo ""
 echo -e "${CYAN}[8/10] Building project...${NC}"
-npm run build 2>&1 | tail -15
+npm run build -- --webpack 2>&1 | tail -15
 if [ ${PIPESTATUS[0]} -ne 0 ]; then
   echo -e "${RED}  ✗ Build failed! Check the error above.${NC}"
   exit 1
@@ -248,8 +247,6 @@ Restart=always
 RestartSec=10
 Environment=NODE_ENV=production
 Environment=PORT=${PORT}
-Environment=ADMIN_USER=${ADMIN_USER}
-Environment=ADMIN_PASS=${ADMIN_PASS}
 ${SSL_ENV:+Environment=SSL_ENABLED=true}
 
 [Install]

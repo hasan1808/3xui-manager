@@ -6,6 +6,10 @@ export interface Panel {
   password: string;
   apiToken?: string;
   active: boolean;
+  pricePerGb?: number | null;
+  ownerId?: string;
+  subUri?: string;
+  clientUrl?: string;
   createdAt: string;
 }
 

@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-api";
-import { getPanel } from "@/lib/panel-store";
+import { requireAuth, getAuthUser } from "@/lib/auth-api";
+import { getPanel, getAllPanels } from "@/lib/panel-store";
 import { getXuiClient } from "@/lib/xui-api";
 import { readPanelBackupBinary } from "@/lib/backup-store";
 import { addLog } from "@/lib/log-store";
@@ -8,6 +8,10 @@ import { addLog } from "@/lib/log-store";
 export async function POST(req: Request) {
   const auth = await requireAuth(req);
   if (auth) return auth;
+  const user = await getAuthUser(req);
+  if (!user || user.role !== "superadmin") {
+    return NextResponse.json({ error: "فقط مدیر اصلی" }, { status: 403 });
+  }
   try {
     const body = await req.json().catch(() => ({}));
     const panelId = body.panelId;

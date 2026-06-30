@@ -1,6 +1,8 @@
 import { Panel, ServerStatus, Inbound, XUIClient } from "./types";
 import { readSettings } from "./settings-store";
 
+process.env.NODE_TLS_REJECT_UNAUTHORIZED = "0";
+
 class XuiApiClient {
   private baseUrl: string;
   private sessionCookie: string | null = null;
@@ -91,6 +93,11 @@ class XuiApiClient {
     return data.obj || [];
   }
 
+  async getLastOnline(): Promise<Record<string, number>> {
+    const data = await this.request("/panel/api/inbounds/lastOnline", { method: "POST" });
+    return data.obj || {};
+  }
+
   async getClientLinks(inboundId: number, email: string): Promise<string> {
     const data = await this.request(`/panel/api/inbounds/getClientLinks/${inboundId}/${encodeURIComponent(email)}`);
     return data.obj || "";
@@ -116,6 +123,22 @@ class XuiApiClient {
       headers: { "Content-Type": "application/json" },
       body: body ? JSON.stringify(body) : undefined,
     });
+  }
+
+  async getClientTraffics(email: string): Promise<{ up: number; down: number } | null> {
+    try {
+      const data = await this.request(`/panel/api/inbounds/getClientTraffics/${encodeURIComponent(email)}`);
+      const obj = data.obj || data;
+      if (!obj) return null;
+      if (Array.isArray(obj)) {
+        let totalUp = 0, totalDown = 0;
+        for (const item of obj) {
+          if (item.email === email || !email) { totalUp += item.up || 0; totalDown += item.down || 0; }
+        }
+        return { up: totalUp, down: totalDown };
+      }
+      return { up: obj.up || 0, down: obj.down || 0 };
+    } catch { return null; }
   }
 
   getAuthHeaders(): Record<string, string> {

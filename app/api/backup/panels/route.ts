@@ -1,5 +1,5 @@
 import { NextResponse } from "next/server";
-import { requireAuth } from "@/lib/auth-api";
+import { requireAuth, getAuthUser } from "@/lib/auth-api";
 import { getAllPanels, getPanel } from "@/lib/panel-store";
 import { getXuiClient } from "@/lib/xui-api";
 import { listPanelBackups, savePanelBackupBinary, readPanelBackupBinary, deletePanelBackup, getPanelBackupInfo } from "@/lib/backup-store";
@@ -9,12 +9,20 @@ import type { Panel } from "@/lib/types";
 export async function GET(req: Request) {
   const auth = await requireAuth(req);
   if (auth) return auth;
+  const user = await getAuthUser(req);
   const { searchParams } = new URL(req.url);
   const panelId = searchParams.get("panelId");
   const file = searchParams.get("file");
   const download = searchParams.get("download");
 
   if (file && download) {
+    if (user && user.role !== "superadmin") {
+      const backups = listPanelBackups();
+      const backup = backups.find((b: any) => b.filename === file || b.file === file);
+      if (!backup || !getAllPanels().some((p) => p.ownerId === user.userId && p.id === backup.panelId)) {
+        return NextResponse.json({ error: "Forbidden" }, { status: 403 });
+      }
+    }
     const buffer = readPanelBackupBinary(file);
     if (!buffer) return NextResponse.json({ error: "فایل یافت نشد" }, { status: 404 });
     const info = getPanelBackupInfo(file);
@@ -27,18 +35,26 @@ export async function GET(req: Request) {
     });
   }
 
-  const list = listPanelBackups(panelId || undefined);
+  let list = listPanelBackups(panelId || undefined);
+  if (user && user.role !== "superadmin") {
+    const ownedPanels = getAllPanels().filter((p) => p.ownerId === user.userId).map((p) => p.id);
+    list = list.filter((b) => ownedPanels.includes(b.panelId));
+  }
   return NextResponse.json(list);
 }
 
 export async function POST(req: Request) {
   const auth = await requireAuth(req);
   if (auth) return auth;
+  const user = await getAuthUser(req);
   try {
     const body = await req.json().catch(() => ({}));
     const panelId = body.panelId;
 
-    const panels = panelId ? [getPanel(panelId)].filter(Boolean) as Panel[] : getAllPanels();
+    let panels = panelId ? [getPanel(panelId)].filter(Boolean) as Panel[] : getAllPanels();
+    if (user && user.role !== "superadmin") {
+      panels = panels.filter((p) => p.ownerId === user.userId);
+    }
     if (panels.length === 0) {
       return NextResponse.json({ error: "پنلی یافت نشد" }, { status: 404 });
     }
@@ -82,6 +98,10 @@ export async function POST(req: Request) {
 export async function DELETE(req: Request) {
   const auth = await requireAuth(req);
   if (auth) return auth;
+  const user = await getAuthUser(req);
+  if (!user || user.role !== "superadmin") {
+    return NextResponse.json({ error: "فقط مدیر اصلی" }, { status: 403 });
+  }
   try {
     const { searchParams } = new URL(req.url);
     const file = searchParams.get("file");
