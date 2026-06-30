@@ -123,8 +123,8 @@ fi
 echo -e "${GREEN}  ✓ Project downloaded${NC}"
 
 echo ""
-echo -e "${CYAN}[6/10] Installing dependencies...${NC}"
-npm install 2>&1 | tail -10
+echo -e "${CYAN}[6/10] Installing dependencies (this may take a few minutes)...${NC}"
+npm ci --legacy-peer-deps 2>&1 | tail -10
 if [ ${PIPESTATUS[0]} -ne 0 ]; then
   echo -e "${RED}  ✗ npm install failed!${NC}"
   exit 1
