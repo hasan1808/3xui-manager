@@ -49,5 +49,9 @@ export async function PUT(req: Request) {
     return NextResponse.json({ error: "خطا در ذخیره: " + e.message }, { status: 500 });
   }
 
+  try {
+    execSync("systemctl restart 3xui-manager", { timeout: 10000 });
+  } catch {}
+
   return NextResponse.json({ ok: true, port: portNum, message: `پورت به ${portNum} تغییر کرد. سرویس ریستارت شد.` });
 }
