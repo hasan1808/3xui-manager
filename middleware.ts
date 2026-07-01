@@ -4,6 +4,12 @@ import type { NextRequest } from "next/server";
 const publicPaths = ["/login", "/api/auth/login", "/api/settings"];
 
 export async function middleware(req: NextRequest) {
+  const { pathname } = req.nextUrl;
+
+  if (pathname.startsWith("/.well-known")) {
+    return NextResponse.next();
+  }
+
   if (process.env.NODE_ENV === "production" && process.env.SSL_ENABLED === "true") {
     const proto = req.headers.get("x-forwarded-proto");
     const host = req.headers.get("host");
@@ -15,7 +21,6 @@ export async function middleware(req: NextRequest) {
     }
   }
 
-  const { pathname } = req.nextUrl;
   if (publicPaths.some((p) => pathname.startsWith(p))) {
     return NextResponse.next();
   }
