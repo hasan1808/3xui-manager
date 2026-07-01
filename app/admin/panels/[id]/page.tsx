@@ -336,6 +336,9 @@ export default function PanelDetail() {
     });
     const data = await res.json().catch(() => ({}));
     if (!res.ok) throw new Error(data?.msg || data?.error || `خطا (${res.status})`);
+    if (data.msg && /UNIQUE|constraint|email|duplicate/i.test(String(data.msg))) {
+      throw new Error("ایمیل وارد شده تکراری است. لطفاً ایمیل دیگری وارد کنید");
+    }
     if (data.success === false) throw new Error(data?.msg || "خطا در ذخیره");
   }
 
@@ -401,8 +404,9 @@ export default function PanelDetail() {
 
     if (!client) {
       for (const x of inbounds) {
-        const existingClients = parseClients(x);
-        if (existingClients.some((c) => c.email === email)) {
+        const clients = x.clients || parseClients(x);
+        const found = clients.find((c: any) => c.email === email);
+        if (found) {
           toast(`ایمیل "${email}" قبلاً در اینباند "${x.remark}" استفاده شده`, "error");
           return;
         }
@@ -417,7 +421,12 @@ export default function PanelDetail() {
         if (client) return cs.map((c) => c.id === client.id ? { ...c, email: form.email.trim(), totalGB, expiryTime, ipLimit, enable: form.enable } : c);
         return [...cs, { id: generateId(), email: form.email.trim(), enable: form.enable, expiryTime, totalGB, up: 0, down: 0, ipLimit, subId: generateId() }];
       });
-      await updateInbound(inb, ns);
+      try {
+        await updateInbound(inb, ns);
+      } catch (e: any) {
+        toast(e?.message || "خطا در ذخیره", "error");
+        return;
+      }
       setInbounds((prev) => prev.map((x) => x.id === inb.id ? { ...x, clients: parseClients({ ...x, settings: ns }), settings: ns } : x));
       logAction(client ? "edit_client" : "add_client", `${form.email.trim()} در ${inb.remark}`);
       setModal(null);
