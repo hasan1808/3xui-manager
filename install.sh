@@ -195,10 +195,11 @@ NGINX_EOF
 
     ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
     rm -f /etc/nginx/sites-enabled/default
-    nginx -t > /dev/null 2>&1
-    systemctl reload nginx > /dev/null 2>&1
+    nginx -t > /dev/null 2>&1 || true
+    systemctl reload nginx > /dev/null 2>&1 || true
 
     echo -e "${YELLOW}  ⟳ Requesting SSL certificate...${NC}"
+    SSL_OK=false
     if certbot --nginx -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" 2>&1; then
         SSL_OK=true
         echo -e "${GREEN}  ✓ SSL certificate obtained${NC}"
@@ -226,8 +227,8 @@ server {
 }
 NGINX_EOF
 
-        nginx -t > /dev/null 2>&1
-        systemctl reload nginx > /dev/null 2>&1
+        nginx -t > /dev/null 2>&1 || true
+        systemctl reload nginx > /dev/null 2>&1 || true
 
         sed -i 's/SSL_ENABLED=true/SSL_ENABLED=false/' .env.local
         echo -e "${YELLOW}  ✓ Nginx set to HTTP only${NC}"
@@ -255,8 +256,8 @@ NGINX_EOF
 
     ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
     rm -f /etc/nginx/sites-enabled/default
-    nginx -t > /dev/null 2>&1
-    systemctl reload nginx > /dev/null 2>&1
+    nginx -t > /dev/null 2>&1 || true
+    systemctl reload nginx > /dev/null 2>&1 || true
 fi
 
 echo -e "${GREEN}  ✓ Nginx configured${NC}"
