@@ -171,12 +171,6 @@ if [[ -n "$DOMAIN_NAME" ]]; then
 server {
     listen 80;
     server_name ${DOMAIN_NAME};
-    return 301 https://\$host\$request_uri;
-}
-
-server {
-    listen 443 ssl;
-    server_name ${DOMAIN_NAME};
 
     location / {
         proxy_pass http://127.0.0.1:${PORT};
@@ -195,8 +189,8 @@ NGINX_EOF
 
     ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
     rm -f /etc/nginx/sites-enabled/default
-    nginx -t > /dev/null 2>&1 || true
-    systemctl reload nginx > /dev/null 2>&1 || true
+    nginx -t 2>&1
+    systemctl reload nginx > /dev/null 2>&1
 
     echo -e "${YELLOW}  ⟳ Requesting SSL certificate...${NC}"
     SSL_OK=false
@@ -205,7 +199,8 @@ NGINX_EOF
         echo -e "${GREEN}  ✓ SSL certificate obtained${NC}"
     else
         SSL_OK=false
-        echo -e "${YELLOW}  ⚠ SSL certificate failed. Falling back to HTTP...${NC}"
+        echo -e "${YELLOW}  ⚠ SSL certificate failed. Panel available at HTTP.${NC}"
+        sed -i 's/SSL_ENABLED=true/SSL_ENABLED=false/' .env.local
 
         cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
 server {
@@ -226,12 +221,8 @@ server {
     }
 }
 NGINX_EOF
-
-        nginx -t > /dev/null 2>&1 || true
+        nginx -t 2>&1 || true
         systemctl reload nginx > /dev/null 2>&1 || true
-
-        sed -i 's/SSL_ENABLED=true/SSL_ENABLED=false/' .env.local
-        echo -e "${YELLOW}  ✓ Nginx set to HTTP only${NC}"
     fi
 else
     cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
