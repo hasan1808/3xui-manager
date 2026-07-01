@@ -397,6 +397,18 @@ export default function PanelDetail() {
     if (!modal) return;
     const { inb, client } = modal;
     if (!form.email.trim()) { toast("ایمیل را وارد کنید", "error"); return; }
+    const email = form.email.trim();
+
+    if (!client) {
+      for (const x of inbounds) {
+        const existingClients = parseClients(x);
+        if (existingClients.some((c) => c.email === email)) {
+          toast(`ایمیل "${email}" قبلاً در اینباند "${x.remark}" استفاده شده`, "error");
+          return;
+        }
+      }
+    }
+
     const totalGB = form.totalGB ? parseFloat(form.totalGB) * 1024 * 1024 * 1024 : 0;
     const expiryTime = daysToTs(form.expiryTime);
     const ipLimit = parseInt(form.ipLimit) || 0;
