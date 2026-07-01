@@ -34,6 +34,12 @@ echo ""
 
 read -p "Domain name (e.g. panel.example.com): " DOMAIN_NAME
 
+SSL_ENABLED="n"
+if [[ -n "$DOMAIN_NAME" ]]; then
+    read -p "Enable SSL (Let's Encrypt)? (y/n) [y]: " SSL_ENABLED
+    SSL_ENABLED=${SSL_ENABLED:-y}
+fi
+
 read -p "Server port [3000]: " PORT
 PORT=${PORT:-3000}
 
@@ -43,7 +49,11 @@ echo -e "  Username: ${GREEN}${ADMIN_USER}${NC}"
 echo -e "  Port:     ${GREEN}${PORT}${NC}"
 if [[ -n "$DOMAIN_NAME" ]]; then
     echo -e "  Domain:   ${GREEN}${DOMAIN_NAME}${NC}"
-    echo -e "  SSL:      ${GREEN}Let's Encrypt (auto)${NC}"
+    if [[ "$SSL_ENABLED" == "y" || "$SSL_ENABLED" == "Y" ]]; then
+        echo -e "  SSL:      ${GREEN}Let's Encrypt (auto)${NC}"
+    else
+        echo -e "  SSL:      ${YELLOW}No (HTTP only)${NC}"
+    fi
 else
     echo -e "  Domain:   ${YELLOW}Not set (HTTP only)${NC}"
 fi
@@ -137,7 +147,7 @@ echo -e "${CYAN}[7/10] Setting up configuration...${NC}"
 JWT_SECRET=$(openssl rand -hex 32 2>/dev/null || head -c 32 /dev/urandom | base64 | tr -d '\n')
 
 SSL_ENV=""
-if [[ -n "$DOMAIN_NAME" ]]; then
+if [[ "$SSL_ENABLED" == "y" || "$SSL_ENABLED" == "Y" ]]; then
     SSL_ENV="SSL_ENABLED=true"
 fi
 
@@ -167,7 +177,8 @@ echo -e "${CYAN}[9/10] Configuring Nginx reverse proxy...${NC}"
 if [[ -n "$DOMAIN_NAME" ]]; then
     apt-get install -y -qq certbot python3-certbot-nginx > /dev/null 2>&1
 
-    cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
+    if [[ "$SSL_ENABLED" == "y" || "$SSL_ENABLED" == "Y" ]]; then
+        cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
 server {
     listen 80;
     server_name ${DOMAIN_NAME};
@@ -191,20 +202,20 @@ server {
 }
 NGINX_EOF
 
-    mkdir -p /var/www/certbot
-    ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
-    rm -f /etc/nginx/sites-enabled/default
-    nginx -t 2>&1
-    systemctl reload nginx > /dev/null 2>&1
+        mkdir -p /var/www/certbot
+        ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
+        rm -f /etc/nginx/sites-enabled/default
+        nginx -t 2>&1
+        systemctl reload nginx > /dev/null 2>&1
 
-    echo -e "${YELLOW}  ⟳ Requesting SSL certificate...${NC}"
-    SSL_OK=false
-    if certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" 2>&1; then
-        SSL_OK=true
-        echo -e "${GREEN}  ✓ SSL certificate obtained${NC}"
+        echo -e "${YELLOW}  ⟳ Requesting SSL certificate...${NC}"
+        SSL_OK=false
+        if certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" 2>&1; then
+            SSL_OK=true
+            echo -e "${GREEN}  ✓ SSL certificate obtained${NC}"
 
-        CERT_PATH="/etc/letsencrypt/live/${DOMAIN_NAME}"
-        cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
+            CERT_PATH="/etc/letsencrypt/live/${DOMAIN_NAME}"
+            cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
 server {
     listen 80;
     server_name ${DOMAIN_NAME};
@@ -232,12 +243,35 @@ server {
     }
 }
 NGINX_EOF
-        nginx -t 2>&1 && systemctl reload nginx > /dev/null 2>&1
-    else
-        SSL_OK=false
-        echo -e "${YELLOW}  ⚠ SSL certificate failed. Panel available at HTTP.${NC}"
-        sed -i 's/SSL_ENABLED=true/SSL_ENABLED=false/' .env.local
+            nginx -t 2>&1 && systemctl reload nginx > /dev/null 2>&1
+        else
+            SSL_OK=false
+            echo -e "${YELLOW}  ⚠ SSL certificate failed. Panel available at HTTP.${NC}"
+            sed -i 's/SSL_ENABLED=true/SSL_ENABLED=false/' .env.local
 
+            cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+
+    location / {
+        proxy_pass http://127.0.0.1:${PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+}
+NGINX_EOF
+            nginx -t 2>&1 || true
+            systemctl reload nginx > /dev/null 2>&1 || true
+        fi
+    else
         cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
 server {
     listen 80;
@@ -257,8 +291,11 @@ server {
     }
 }
 NGINX_EOF
-        nginx -t 2>&1 || true
-        systemctl reload nginx > /dev/null 2>&1 || true
+
+        ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
+        rm -f /etc/nginx/sites-enabled/default
+        nginx -t 2>&1
+        systemctl reload nginx > /dev/null 2>&1
     fi
 else
     cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
