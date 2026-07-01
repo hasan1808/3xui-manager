@@ -172,6 +172,10 @@ server {
     listen 80;
     server_name ${DOMAIN_NAME};
 
+    location /.well-known/acme-challenge/ {
+        root /var/www/certbot;
+    }
+
     location / {
         proxy_pass http://127.0.0.1:${PORT};
         proxy_http_version 1.1;
@@ -187,6 +191,7 @@ server {
 }
 NGINX_EOF
 
+    mkdir -p /var/www/certbot
     ln -sf /etc/nginx/sites-available/3xui-manager /etc/nginx/sites-enabled/3xui-manager
     rm -f /etc/nginx/sites-enabled/default
     nginx -t 2>&1
@@ -194,9 +199,40 @@ NGINX_EOF
 
     echo -e "${YELLOW}  ⟳ Requesting SSL certificate...${NC}"
     SSL_OK=false
-    if certbot --nginx -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" 2>&1; then
+    if certbot certonly --webroot -w /var/www/certbot -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" 2>&1; then
         SSL_OK=true
         echo -e "${GREEN}  ✓ SSL certificate obtained${NC}"
+
+        CERT_PATH="/etc/letsencrypt/live/${DOMAIN_NAME}"
+        cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+    return 301 https://\\\$host\\\$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    server_name ${DOMAIN_NAME};
+
+    ssl_certificate ${CERT_PATH}/fullchain.pem;
+    ssl_certificate_key ${CERT_PATH}/privkey.pem;
+
+    location / {
+        proxy_pass http://127.0.0.1:${PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
+    }
+}
+NGINX_EOF
+        nginx -t 2>&1 && systemctl reload nginx > /dev/null 2>&1
     else
         SSL_OK=false
         echo -e "${YELLOW}  ⚠ SSL certificate failed. Panel available at HTTP.${NC}"
