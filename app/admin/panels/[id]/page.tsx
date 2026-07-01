@@ -5,7 +5,7 @@ import { useToast } from "@/lib/toast-context";
 import { useKeyboardShortcuts } from "@/lib/keyboard";
 import { useConfirm } from "@/lib/confirm-dialog";
 import FocusTrap from "@/lib/focus-trap";
-import { formatBytes, formatSpeed, formatUptime, extractHost } from "@/lib/utils";
+import { formatBytes, formatSpeed, formatUptime, extractHost, generateId } from "@/lib/utils";
 import NavBar from "@/lib/navbar";
 import { Spinner, SkeletonTable } from "@/lib/spinner";
 import PageTransition from "@/lib/page-transition";
@@ -403,7 +403,7 @@ export default function PanelDetail() {
     await withLoading(`save-${client?.id || "new"}`, async () => {
       const ns = modifyClients(inb, (cs) => {
         if (client) return cs.map((c) => c.id === client.id ? { ...c, email: form.email.trim(), totalGB, expiryTime, ipLimit, enable: form.enable } : c);
-        return [...cs, { id: crypto.randomUUID(), email: form.email.trim(), enable: form.enable, expiryTime, totalGB, up: 0, down: 0, ipLimit, subId: crypto.randomUUID() }];
+        return [...cs, { id: generateId(), email: form.email.trim(), enable: form.enable, expiryTime, totalGB, up: 0, down: 0, ipLimit, subId: generateId() }];
       });
       await updateInbound(inb, ns);
       setInbounds((prev) => prev.map((x) => x.id === inb.id ? { ...x, clients: parseClients({ ...x, settings: ns }), settings: ns } : x));
