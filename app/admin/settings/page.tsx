@@ -62,6 +62,7 @@ export default function SettingsPage() {
   const [domainInput, setDomainInput] = useState("");
   const [domainSsl, setDomainSsl] = useState(false);
   const [domainSaving, setDomainSaving] = useState(false);
+  const [domainApplying, setDomainApplying] = useState(false);
 
   const isSuperadmin = currentUser?.role === "superadmin";
 
@@ -180,6 +181,25 @@ export default function SettingsPage() {
       }
     } catch { toast("خطا", "error"); }
     setDomainSaving(false);
+  }
+
+  async function applyDomain() {
+    if (!serverDomain) { toast("دامنه‌ای تنظیم نشده", "error"); return; }
+    setDomainApplying(true);
+    try {
+      const res = await fetch("/api/settings/domain/apply", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ domain: serverDomain, ssl: domainSsl }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        toast(`دامنه ${serverDomain} اعمال شد: ${data.steps?.join(", ") || "موفق"}`);
+      } else {
+        toast(data.error || "خطا", "error");
+      }
+    } catch { toast("خطا", "error"); }
+    setDomainApplying(false);
   }
 
   async function clearLogs() {
@@ -386,6 +406,13 @@ export default function SettingsPage() {
                 <p className="text-xs" style={{ color: "var(--text-secondary)" }}>
                   Nginx و Let's Encrypt (اختیاری) نصب و پیکربندی می‌شود
                 </p>
+                {serverDomain && (
+                  <button onClick={applyDomain} disabled={domainApplying}
+                    className="w-full py-2.5 bg-green-600 hover:bg-green-700 disabled:opacity-50 rounded text-sm transition flex items-center justify-center gap-2">
+                    {domainApplying && <Spinner />}
+                    {domainApplying ? "در حال اعمال..." : "اعمال تنظیمات دامنه روی سرور"}
+                  </button>
+                )}
               </div>
             </div>
           )}
