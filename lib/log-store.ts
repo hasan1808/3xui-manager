@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { withLock, writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const LOGS_FILE = path.join(process.cwd(), "data", "logs.json");
 
@@ -31,7 +32,7 @@ export async function addLog(action: string, detail: string): Promise<void> {
   await withLock("logs", () => {
     const logs = readLogs();
     logs.unshift({
-      id: crypto.randomUUID(),
+      id: generateId(),
       timestamp: new Date().toISOString(),
       action,
       detail,

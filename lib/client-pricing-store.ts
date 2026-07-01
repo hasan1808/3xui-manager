@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { withLock, writeFileAtomic } from "./lock";
 import { getPricing } from "./finance-store";
+import { generateId } from "./utils";
 import { getPanel } from "./panel-store";
 import { getAdminByUsername } from "./admin-store";
 
@@ -67,7 +67,7 @@ export async function setClientPrice(panelId: string, adminUsername: string, pri
       return list[idx];
     }
     const entry: ClientPrice = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       panelId,
       adminUsername,
       pricePerGb,

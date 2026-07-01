@@ -3,7 +3,7 @@ import { requireAuth, getAuthUser } from "@/lib/auth-api";
 import { getXuiClient } from "@/lib/xui-api";
 import { getPanel } from "@/lib/panel-store";
 import { getAssignedInbounds } from "@/lib/inbound-ownership-store";
-import crypto from "crypto";
+import { generateId } from "@/lib/utils";
 
 export async function POST(req: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireAuth(req);
@@ -74,7 +74,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         continue;
       }
       settings.clients.push({
-        id: crypto.randomUUID(),
+        id: generateId(),
         email: c.email,
         enable: c.enable,
         expiryTime: c.expiryTime,
@@ -83,7 +83,7 @@ export async function POST(req: Request, { params }: { params: Promise<{ id: str
         down: 0,
         ipLimit: c.ipLimit,
         ...(c.flow ? { flow: c.flow } : {}),
-        subId: crypto.randomUUID(),
+        subId: generateId(),
       });
       existingEmails.add(c.email);
       added.push(c.email);

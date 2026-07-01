@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { withLock, writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const PRICING_FILE = path.join(DATA_DIR, "pricing.json");
@@ -63,7 +63,7 @@ export async function addTransaction(tx: Omit<Transaction, "id" | "createdAt">):
     const list = getTransactions();
     const entry: Transaction = {
       ...tx,
-      id: crypto.randomUUID(),
+      id: generateId(),
       createdAt: new Date().toISOString(),
     };
     list.unshift(entry);

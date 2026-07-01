@@ -2,6 +2,7 @@ import { Panel } from "./types";
 import fs from "fs";
 import path from "path";
 import { withLock, writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const DATA_FILE = path.join(process.cwd(), "data", "panels.json");
 
@@ -51,7 +52,7 @@ export async function addPanel(panel: Omit<Panel, "id" | "createdAt">): Promise<
     const panels = readPanels();
     const newPanel: Panel = {
       ...panel,
-      id: crypto.randomUUID(),
+      id: generateId(),
       createdAt: new Date().toISOString(),
     };
     panels.push(newPanel);

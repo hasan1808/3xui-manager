@@ -1,8 +1,8 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import bcrypt from "bcryptjs";
 import { withLock, writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const ADMINS_FILE = path.join(DATA_DIR, "admins.json");
@@ -55,7 +55,7 @@ function migrateFromOldFiles(): Admin[] {
     else if (envPass) password = envPass;
   } catch {}
   return [{
-    id: crypto.randomUUID(),
+    id: generateId(),
     username,
     password: hashPassword(password),
     role: "superadmin",
@@ -125,14 +125,14 @@ export async function addAdmin(username: string, password: string, role: "supera
       throw new Error("نام کاربری تکراری است");
     }
     const admin: Admin = {
-      id: crypto.randomUUID(),
-      username,
-      password: hashPassword(password),
-      role,
-      balance: 0,
-      createdAt: new Date().toISOString(),
-      createdBy,
-    };
+    id: generateId(),
+    username,
+    password: hashPassword(password),
+    role,
+    balance: 0,
+    createdAt: new Date().toISOString(),
+    createdBy,
+  };
     data.admins.push(admin);
     writeData(data);
     return admin;

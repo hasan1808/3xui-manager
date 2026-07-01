@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { withLock, writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const GROUPS_FILE = path.join(DATA_DIR, "client-groups.json");
@@ -83,7 +83,7 @@ export async function addGroup(name: string, color: string, defaultTrafficLimitG
   return withLock("client-groups", () => {
     const groups = readGroups();
     const group: ClientGroup = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       name,
       color,
       defaultTrafficLimitGb,
@@ -139,7 +139,7 @@ export async function setClientLimit(panelId: string, clientEmail: string, group
       return limits[idx];
     }
     const entry: ClientLimit = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       panelId,
       clientEmail,
       groupId,

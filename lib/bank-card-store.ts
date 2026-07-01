@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "bank-card.json");
@@ -24,7 +24,7 @@ function readRaw(): BankCard[] {
   try {
     const raw = JSON.parse(fs.readFileSync(FILE, "utf-8"));
     if (Array.isArray(raw)) return raw;
-    if (raw.cardNumber) return [{ id: crypto.randomUUID(), ...raw }];
+    if (raw.cardNumber) return [{ id: generateId(), ...raw }];
     return [];
   } catch { return []; }
 }
@@ -39,7 +39,7 @@ export function getBankCards(): BankCard[] {
 
 export async function addBankCard(card: Omit<BankCard, "id">): Promise<BankCard> {
   const cards = readRaw();
-  const newCard: BankCard = { id: crypto.randomUUID(), ...card };
+  const newCard: BankCard = { id: generateId(), ...card };
   cards.push(newCard);
   writeRaw(cards);
   return newCard;

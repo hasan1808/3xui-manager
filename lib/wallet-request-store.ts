@@ -1,7 +1,7 @@
 import fs from "fs";
 import path from "path";
-import crypto from "crypto";
 import { withLock, writeFileAtomic } from "./lock";
+import { generateId } from "./utils";
 
 const DATA_DIR = path.join(process.cwd(), "data");
 const FILE = path.join(DATA_DIR, "wallet-requests.json");
@@ -53,7 +53,7 @@ export async function createRequest(adminId: string, adminUsername: string, amou
   return withLock("wallet-requests", () => {
     const list = readRaw();
     const request: WalletRequest = {
-      id: crypto.randomUUID(),
+      id: generateId(),
       adminId,
       adminUsername,
       amount,
