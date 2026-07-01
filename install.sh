@@ -198,9 +198,40 @@ NGINX_EOF
     nginx -t > /dev/null 2>&1
     systemctl reload nginx > /dev/null 2>&1
 
-    certbot --nginx -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" > /dev/null 2>&1 || {
-        echo -e "${YELLOW}  ⚠ SSL certificate setup failed. Using HTTP only.${NC}"
+    echo -e "${YELLOW}  ⟳ Requesting SSL certificate...${NC}"
+    if certbot --nginx -d "$DOMAIN_NAME" --non-interactive --agree-tos --email "admin@${DOMAIN_NAME}" 2>&1; then
+        SSL_OK=true
+        echo -e "${GREEN}  ✓ SSL certificate obtained${NC}"
+    else
+        SSL_OK=false
+        echo -e "${YELLOW}  ⚠ SSL certificate failed. Falling back to HTTP...${NC}"
+
+        cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
+server {
+    listen 80;
+    server_name ${DOMAIN_NAME};
+
+    location / {
+        proxy_pass http://127.0.0.1:${PORT};
+        proxy_http_version 1.1;
+        proxy_set_header Upgrade \$http_upgrade;
+        proxy_set_header Connection "upgrade";
+        proxy_set_header Host \$host;
+        proxy_set_header X-Real-IP \$remote_addr;
+        proxy_set_header X-Forwarded-For \$proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto \$scheme;
+        proxy_read_timeout 86400;
+        proxy_send_timeout 86400;
     }
+}
+NGINX_EOF
+
+        nginx -t > /dev/null 2>&1
+        systemctl reload nginx > /dev/null 2>&1
+
+        sed -i 's/SSL_ENABLED=true/SSL_ENABLED=false/' .env.local
+        echo -e "${YELLOW}  ✓ Nginx set to HTTP only${NC}"
+    fi
 else
     cat > /etc/nginx/sites-available/3xui-manager << NGINX_EOF
 server {
@@ -271,17 +302,23 @@ if systemctl is-active --quiet ${SERVICE_NAME}; then
     echo -e "${GREEN}║       ✅ Installation Successful!        ║${NC}"
     echo -e "${GREEN}╚══════════════════════════════════════════╝${NC}"
     echo ""
-    if [[ -n "$DOMAIN_NAME" ]]; then
+
+    SERVER_IP=$(hostname -I | awk '{print $1}')
+
+    if [[ -n "$DOMAIN_NAME" ]] && [[ "$SSL_OK" == "true" ]]; then
         echo -e "  Access URL:  ${CYAN}https://${DOMAIN_NAME}${NC}"
+    elif [[ -n "$DOMAIN_NAME" ]]; then
+        echo -e "  Access URL:  ${CYAN}http://${DOMAIN_NAME}${NC}"
     else
-        echo -e "  Access URL:  ${CYAN}http://$(hostname -I | awk '{print $1}'):${PORT}${NC}"
+        echo -e "  Access URL:  ${CYAN}http://${SERVER_IP}:${PORT}${NC}"
     fi
+
     echo -e "  Port:        ${YELLOW}${PORT}${NC}"
     echo -e "  Username:    ${YELLOW}${ADMIN_USER}${NC}"
     echo -e "  Password:    ${YELLOW}${ADMIN_PASS}${NC}"
     echo ""
     echo -e "  ${YELLOW}Useful commands:${NC}"
-    echo -e "  Update:        cd ${INSTALL_DIR} && git pull && npm run build && systemctl restart ${SERVICE_NAME}"
+    echo -e "  Update:        cd ${INSTALL_DIR} && git pull && npm run build -- --webpack && systemctl restart ${SERVICE_NAME}"
     echo -e "  Check status:  systemctl status ${SERVICE_NAME}"
     echo -e "  Restart:       systemctl restart ${SERVICE_NAME}"
     echo -e "  Stop:          systemctl stop ${SERVICE_NAME}"
@@ -296,6 +333,19 @@ else
     echo -e "${RED}║       But the service failed to start    ║${NC}"
     echo -e "${RED}╚══════════════════════════════════════════╝${NC}"
     echo ""
+
+    SERVER_IP=$(hostname -I | awk '{print $1}')
+
+    echo -e "  ${YELLOW}Panel Info:${NC}"
+    if [[ -n "$DOMAIN_NAME" ]]; then
+        echo -e "  Access URL:  ${CYAN}http://${DOMAIN_NAME}${NC}"
+    else
+        echo -e "  Access URL:  ${CYAN}http://${SERVER_IP}:${PORT}${NC}"
+    fi
+    echo -e "  Port:        ${YELLOW}${PORT}${NC}"
+    echo -e "  Username:    ${YELLOW}${ADMIN_USER}${NC}"
+    echo -e "  Password:    ${YELLOW}${ADMIN_PASS}${NC}"
+    echo ""
     echo -e "  ${YELLOW}Checking logs for errors:${NC}"
     echo ""
     systemctl status ${SERVICE_NAME} --no-pager 2>&1 | head -20
@@ -304,7 +354,7 @@ else
     echo -e "  journalctl -u ${SERVICE_NAME} --no-pager -n 30"
     echo ""
     echo -e "  ${YELLOW}Useful commands:${NC}"
-    echo -e "  Update:        cd ${INSTALL_DIR} && git pull && npm run build && systemctl restart ${SERVICE_NAME}"
+    echo -e "  Update:        cd ${INSTALL_DIR} && git pull && npm run build -- --webpack && systemctl restart ${SERVICE_NAME}"
     echo -e "  Restart:       systemctl restart ${SERVICE_NAME}"
     echo -e "  Logs:          journalctl -u ${SERVICE_NAME} -f"
     echo -e "  Uninstall:     sudo ./uninstall.sh"
