@@ -299,37 +299,83 @@ export default function DashboardPage() {
                 {st?.error ? (
                   <p className="text-red-400 text-sm">{st.error}</p>
                 ) : st ? (
-                  <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 text-sm">
-                    <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
-                      <p className="text-gray-400 text-xs">Xray</p>
-                      <p className={`font-medium ${st.xray?.state === "running" ? "text-green-400" : "text-red-400"}`}>
-                        {st.xray?.state === "running" ? "Running" : "Stopped"}
-                      </p>
-                      <p className="text-gray-500 text-xs">{st.xray?.version || ""}</p>
-                      <p className="text-gray-500 text-xs mt-1">{formatUptime(st.uptime!)}</p>
-                      {st.version && <p className="text-gray-500 text-xs mt-1">Panel: {st.version}</p>}
+                  <>
+                    <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-5 gap-2 sm:gap-3 text-sm">
+                      <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
+                        <p className="text-gray-400 text-xs">Xray</p>
+                        <p className={`font-medium ${st.xray?.state === "running" ? "text-green-400" : "text-red-400"}`}>
+                          {st.xray?.state === "running" ? "Running" : "Stopped"}
+                        </p>
+                        <p className="text-gray-500 text-xs">{st.xray?.version || ""}</p>
+                        <p className="text-gray-500 text-xs mt-1">{formatUptime(st.uptime!)}</p>
+                        {st.version && <p className="text-gray-500 text-xs mt-1">Panel: {st.version}</p>}
+                      </div>
+                      <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
+                        <p className="text-gray-400 text-xs">سرور</p>
+                        <p className="text-sm font-mono font-bold text-blue-400 truncate max-w-[120px] mx-auto" dir="ltr">{extractHost(panel.url)}</p>
+                        <p className="text-green-400 text-xs">{det?.onlineCount || 0} online</p>
+                      </div>
+                      <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
+                        <p className="text-gray-400 text-xs">سرعت</p>
+                        <p className="text-sm font-medium text-green-400">↑{formatSpeed(st.netIO?.up || 0)}</p>
+                        <p className="text-sm font-medium text-blue-400">↓{formatSpeed(st.netIO?.down || 0)}</p>
+                      </div>
+                      <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
+                        <p className="text-gray-400 text-xs">مصرف</p>
+                        <p className="text-sm font-medium text-yellow-400">↑{formatBytes(det?.totalUp || 0)}</p>
+                        <p className="text-sm font-medium text-yellow-400">↓{formatBytes(det?.totalDown || 0)}</p>
+                      </div>
+                      <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
+                        <p className="text-gray-400 text-xs">کاربران</p>
+                        <p className="text-lg font-bold">{det?.clientCount || 0}</p>
+                        <p className="text-gray-500 text-xs">کل</p>
+                      </div>
                     </div>
-                    <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
-                      <p className="text-gray-400 text-xs">سرور</p>
-                      <p className="text-sm font-mono font-bold text-blue-400 truncate max-w-[120px] mx-auto" dir="ltr">{extractHost(panel.url)}</p>
-                      <p className="text-green-400 text-xs">{det?.onlineCount || 0} online</p>
-                    </div>
-                    <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
-                      <p className="text-gray-400 text-xs">سرعت</p>
-                      <p className="text-sm font-medium text-green-400">↑{formatSpeed(st.netIO?.up || 0)}</p>
-                      <p className="text-sm font-medium text-blue-400">↓{formatSpeed(st.netIO?.down || 0)}</p>
-                    </div>
-                    <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
-                      <p className="text-gray-400 text-xs">مصرف</p>
-                      <p className="text-sm font-medium text-yellow-400">↑{formatBytes(det?.totalUp || 0)}</p>
-                      <p className="text-sm font-medium text-yellow-400">↓{formatBytes(det?.totalDown || 0)}</p>
-                    </div>
-                    <div className="rounded p-3 text-center" style={{ background: "var(--bg-tertiary)" }}>
-                      <p className="text-gray-400 text-xs">کاربران</p>
-                      <p className="text-lg font-bold">{det?.clientCount || 0}</p>
-                      <p className="text-gray-500 text-xs">کل</p>
-                    </div>
-                  </div>
+
+                    {(st.cpu !== undefined || st.mem || st.disk) && (
+                      <div className="mt-3 grid grid-cols-3 gap-2">
+                        {st.cpu !== undefined && (
+                          <div className="rounded p-2" style={{ background: "var(--bg-tertiary)" }}>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-gray-400">CPU</span>
+                              <span className="font-mono font-bold" style={{ color: st.cpu > 80 ? "#f87171" : st.cpu > 50 ? "#fbbf24" : "#4ade80" }}>{Math.round(st.cpu)}%</span>
+                            </div>
+                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(st.cpu, 100)}%`, background: st.cpu > 80 ? "#f87171" : st.cpu > 50 ? "#fbbf24" : "#4ade80" }} />
+                            </div>
+                          </div>
+                        )}
+                        {st.mem && (
+                          <div className="rounded p-2" style={{ background: "var(--bg-tertiary)" }}>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-gray-400">RAM</span>
+                              <span className="font-mono font-bold" style={{ color: (st.mem.current / st.mem.total * 100) > 80 ? "#f87171" : (st.mem.current / st.mem.total * 100) > 50 ? "#fbbf24" : "#60a5fa" }}>
+                                {Math.round(st.mem.current / st.mem.total * 100)}%
+                              </span>
+                            </div>
+                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(st.mem.current / st.mem.total * 100, 100)}%`, background: (st.mem.current / st.mem.total * 100) > 80 ? "#f87171" : (st.mem.current / st.mem.total * 100) > 50 ? "#fbbf24" : "#60a5fa" }} />
+                            </div>
+                            <p className="text-gray-500 text-[10px] mt-0.5 text-center">{formatBytes(st.mem.current)} / {formatBytes(st.mem.total)}</p>
+                          </div>
+                        )}
+                        {st.disk && (
+                          <div className="rounded p-2" style={{ background: "var(--bg-tertiary)" }}>
+                            <div className="flex items-center justify-between text-xs mb-1">
+                              <span className="text-gray-400">Disk</span>
+                              <span className="font-mono font-bold" style={{ color: (st.disk.current / st.disk.total * 100) > 80 ? "#f87171" : (st.disk.current / st.disk.total * 100) > 50 ? "#fbbf24" : "#c084fc" }}>
+                                {Math.round(st.disk.current / st.disk.total * 100)}%
+                              </span>
+                            </div>
+                            <div className="w-full h-2 rounded-full overflow-hidden" style={{ background: "var(--bg-primary)" }}>
+                              <div className="h-full rounded-full transition-all duration-500" style={{ width: `${Math.min(st.disk.current / st.disk.total * 100, 100)}%`, background: (st.disk.current / st.disk.total * 100) > 80 ? "#f87171" : (st.disk.current / st.disk.total * 100) > 50 ? "#fbbf24" : "#c084fc" }} />
+                            </div>
+                            <p className="text-gray-500 text-[10px] mt-0.5 text-center">{formatBytes(st.disk.current)} / {formatBytes(st.disk.total)}</p>
+                          </div>
+                        )}
+                      </div>
+                    )}
+                  </>
                 ) : (
                   <SkeletonCard />
                 )}
