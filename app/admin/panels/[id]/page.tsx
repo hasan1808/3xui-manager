@@ -403,14 +403,21 @@ export default function PanelDetail() {
     const email = form.email.trim();
 
     if (!client) {
-      for (const x of inbounds) {
-        const clients = x.clients || parseClients(x);
-        const found = clients.find((c: any) => c.email === email);
-        if (found) {
-          toast(`ایمیل "${email}" قبلاً در اینباند "${x.remark}" استفاده شده`, "error");
-          return;
+      try {
+        const fres = await fetch(`/api/panels/${id}/proxy/panel/api/inbounds/list`);
+        if (fres.ok) {
+          const fdata = await fres.json();
+          const allInbounds = fdata.obj || [];
+          for (const x of allInbounds) {
+            const clients = parseClients(x);
+            const found = clients.find((c: any) => c.email === email);
+            if (found) {
+              toast(`ایمیل "${email}" قبلاً در اینباند "${x.remark}" استفاده شده`, "error");
+              return;
+            }
+          }
         }
-      }
+      } catch {}
     }
 
     const totalGB = form.totalGB ? parseFloat(form.totalGB) * 1024 * 1024 * 1024 : 0;
